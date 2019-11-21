@@ -7,6 +7,12 @@ const PORT = process.env.PORT || 3000;
 const app = express();
 app.use(express.json());
 
+function wrapAsync(fn) {
+  return function(req, res, next) {
+    fn(req, res, next).catch(next);
+  };
+}
+
 // Database Connection Info
 const MongoClient = require('mongodb').MongoClient;
 const url = 'mongodb+srv://lhgUser:3BF5ndJ9Bhyf@linkedhub-game-y2y54.mongodb.net/test?retryWrites=true&w=majority';
@@ -18,80 +24,53 @@ app.get('/', function(req, res) {
 });
 
 // Route to create new player
-app.post('/players', async function(req, res) {
+app.post('/players', wrapAsync(async function(req, res) {
   // get information of player from POST body data
   let { username, score } = req.body;
 
-  // check if the username already exists
-  const alreadyExisting = await db
-    .collection('players')
-    .findOne({ username: username });
-
-  if (alreadyExisting) {
-    res.send({ status: false, msg: 'player username already exists' });
-  } else {
-    // create the new player
-    await db.collection('players').insertOne({ username, score });
-    console.log(`Created Player ${username}`);
-    res.send({ status: true, msg: 'player created' });
+  // check if username is present
+  if (!username) {
+    return res.status(400).send({
+      message: 'no username'
+    });
   }
-});
 
-// Route to update score
-app.put('/players', async function(req, res) {
-  let { username, score } = req.body;
-  // check if the username already exists
-  const alreadyExisting = await db
-    .collection('players')
-    .findOne({ username: username });
-  if (alreadyExisting) {
-    // Update player object with the username
-    await db
-    .collection('players')
-    .updateOne({ username }, { $set: { username, score } });
-
-    console.log(`Player ${username} score updated to ${score}`);
-    res.send({ status: true, msg: 'player score updated' });
-  } else {
-    res.send({ status: false, msg: 'player username not found' });
+  //check if username is too long
+  if (`${username}`.length > 30) {
+    return res.status(400).send({
+      message: 'username shouldn\'t be longer than 30 characters'
+    });
   }
-});
 
-
-// delete player
-app.delete('/players', async function(req, res) {
-  let { username, score } = req.body;
-  // check if the username already exists
-  const alreadyExisting = await db
-    .collection('players')
-    .findOne({ username: username });
-
-  if (alreadyExisting) {
-    await db.collection('players').deleteOne({ username });
-    console.log(`Player ${username} deleted`);
-    res.send({ status: true, msg: 'player deleted' });
-  } else {
-    res.send({ status: false, msg: 'username not found' });
+  // check if score is number
+  if (typeof score !== 'number' || isNaN(score)) {
+    return res.status(400).send({
+      message: 'score should be a number'
+    });
   }
-});
 
-// Access the leaderboard
-app.get('/players', async function(req, res) {
-  // retrieve ‘lim’ from the query string info
-  let { lim } = req.query;
-  db.collection('players')
-  .find()
-  // -1 is for descending and 1 is for ascending
-  .sort({ score: -1 })
-  // Show only [lim] players
-  .limit(5)
+  // insert player
+  await db.collection('players').insertOne({ username, score });
+  return res.send({
+    message: 'successfully saved score'
+  });
+}));
+
+// Get leaderboard
+app.get('/players', wrapAsync(async function(req, res) {
+  db.collection('players').find({}).project({ _id: 0 }).sort({ score: -1 }).limit(5)
   .toArray(function(err, result) {
     if (err) {
-      res.send({ status: false, msg: 'failed to retrieve players' });
+      res.status(500).send({ message: 'failed to retrieve players' });
     }
     console.log(Array.from(result));
-    res.send({ status: true, msg: result });
+    res.send({ result });
   });
+}));
+
+// Error middleware
+app.use(function (err, req, res, next) {
+  res.status(500).json({ message: err.message });
 });
 
 // Connect to the database
