@@ -15,7 +15,7 @@ function wrapAsync(fn) {
 
 // Database Connection Info
 const MongoClient = require('mongodb').MongoClient;
-const url = 'mongodb+srv://lhgUser:3BF5ndJ9Bhyf@linkedhub-game-y2y54.mongodb.net/test?retryWrites=true&w=majority';
+const url = `mongodb+srv://lhgUser:${process.env.DB_PASS}@linkedhub-game-y2y54.mongodb.net/test?retryWrites=true&w=majority`;
 let db;
 
 // The index route
