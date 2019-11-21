@@ -15,6 +15,7 @@ function wrapAsync(fn) {
 
 // Database Connection Info
 const MongoClient = require('mongodb').MongoClient;
+console.log(process.env.DB_PASS);
 const url = `mongodb+srv://lhgUser:${process.env.DB_PASS}@linkedhub-game-y2y54.mongodb.net/test?retryWrites=true&w=majority`;
 let db;
 
