@@ -1,11 +1,13 @@
 // Import necessary packages
 const express = require('express');
 const bodyParser = require('body-parser');
+const cors = require('cors');
 
 // create and configure the express app
 const PORT = process.env.PORT || 3000;
 const app = express();
 app.use(express.json());
+app.use(cors());
 
 function wrapAsync(fn) {
   return function(req, res, next) {
@@ -43,7 +45,7 @@ app.post('/players', wrapAsync(async function(req, res) {
     });
   }
 
-  // check if score is number
+  // check if score is a number
   if (typeof score !== 'number' || isNaN(score)) {
     return res.status(400).send({
       message: 'score should be a number'
@@ -64,8 +66,7 @@ app.get('/players', wrapAsync(async function(req, res) {
     if (err) {
       res.status(500).send({ message: 'failed to retrieve players' });
     }
-    console.log(Array.from(result));
-    res.send({ result });
+    res.send(result);
   });
 }));
 
