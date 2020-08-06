@@ -60,7 +60,7 @@ app.post('/players', wrapAsync(async function(req, res) {
 
 // Get leaderboard
 app.get('/players', wrapAsync(async function(req, res) {
-  db.collection('players').find({}).project({ _id: 0 }).sort({ score: -1 }).limit(5)
+  db.collection('players').find({}).project({ _id: 0 }).sort({ score: -1 }).limit(99)
   .toArray(function(err, result) {
     if (err) {
       res.status(500).send({ message: 'failed to retrieve players' });
